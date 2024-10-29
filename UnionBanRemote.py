@@ -47,6 +47,10 @@ def save_ban_data(data):
                 # 处理不存在的 uuid
                 return False, '错误：指定的 uuid 不存在'
         else:
+            # 检查数据是否已存在
+            if data['uuid'] in existing_uuids:
+                return False, '错误：数据已存在'
+
             # 为新数据分配一个唯一的序号
             new_id = ban_data["CountFinal"] + 1
             data_with_id = {**data, 'id': new_id}
@@ -86,7 +90,7 @@ def receive_data():
         if success:
             return '数据接收并保存成功', 200
         else:
-            return message, 404
+            return message, 400
     except Exception as e:
         return f'错误：{str(e)}', 500
 
