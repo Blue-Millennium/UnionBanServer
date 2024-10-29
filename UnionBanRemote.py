@@ -28,7 +28,7 @@ def read_ban_data():
     try:
         with open(DATA_FILE, 'r') as file:
             return json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
+    except (FileNotFoundError, json.JSONDecodeError):
         return {"data": [], "CountFinal": 0}
 
 # 将数据保存到ban-data.json文件
@@ -40,12 +40,10 @@ def save_ban_data(data):
         existing_data = ban_data["data"]
         existing_uuids = {item['uuid']: item for item in existing_data}
 
-        if data['sourceServer'] == 'Pardon':
-            if data['uuid'] in existing_uuids:
-                existing_data.remove(existing_uuids[data['uuid']])
-            else:
-                # 处理不存在的 uuid
-                return False, '错误：指定的 uuid 不存在'
+        if data['uuid'] in existing_uuids and existing_uuids[data['uuid']]['sourceServer'] == 'Pardon':
+            existing_data.remove(existing_uuids[data['uuid']])
+            # 使用新数据覆盖
+            existing_data.append(data)
         else:
             # 检查数据是否已存在
             if data['uuid'] in existing_uuids:
