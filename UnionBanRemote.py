@@ -43,6 +43,9 @@ def save_ban_data(data):
         if data['sourceServer'] == 'Pardon':
             if data['uuid'] in existing_uuids:
                 existing_data.remove(existing_uuids[data['uuid']])
+            else:
+                # 处理不存在的 uuid
+                return False, '错误：指定的 uuid 不存在'
         else:
             # 为新数据分配一个唯一的序号
             new_id = ban_data["CountFinal"] + 1
@@ -52,6 +55,7 @@ def save_ban_data(data):
 
         with open(DATA_FILE, 'w') as file:
             json.dump(ban_data, file, indent=2)
+        return True, '数据保存成功'
     except Exception as e:
         raise RuntimeError(f'保存数据时出错: {str(e)}')
 
@@ -78,8 +82,11 @@ def receive_data():
             return '错误：无效的数据格式', 400
 
         # 保存数据到文件
-        save_ban_data(data['data'])
-        return '数据接收并保存成功', 200
+        success, message = save_ban_data(data['data'])
+        if success:
+            return '数据接收并保存成功', 200
+        else:
+            return message, 404
     except Exception as e:
         return f'错误：{str(e)}', 500
 
