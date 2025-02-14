@@ -21,7 +21,7 @@ if not os.path.exists(DATA_FILE):
         json.dump({"data": [], "CountFinal": 0}, file, indent=2)
 
 # 正则表达式
-regex = re.compile(r'"uuid":"([0-9a-fA-F-]+)","reason":"([^"]+)","time":"([^"]+)","sourceServer":"([^"]+)"')
+regex = re.compile(r'"playerUuid":"([0-9a-fA-F-]+)","reason":"([^"]+)","time":"([^"]+)","sourceServer":"([^"]+)","playerName":"([^"]+)"')
 
 # 读取ban-data.json文件中的数据
 def read_ban_data():
