@@ -4,6 +4,9 @@ import re
 from configparser import ConfigParser
 from threading import Thread
 from flask import Flask, request, jsonify
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
+import base64
 
 # 读取配置文件
 config = ConfigParser()
@@ -61,6 +64,22 @@ def save_ban_data(data):
     except Exception as e:
         raise RuntimeError(f'保存数据时出错: {str(e)}')
 
+def decrypt(encrypted_data, key):
+    # 创建 AES 密钥
+    secret_key = key.encode('utf-8')
+
+    # 解码 Base64 编码的数据
+    encrypted_bytes = base64.b64decode(encrypted_data)
+
+    # 初始化 Cipher 实例
+    cipher = AES.new(secret_key, AES.MODE_ECB)
+
+    # 解密数据
+    decrypted_bytes = unpad(cipher.decrypt(encrypted_bytes), AES.block_size)
+
+    # 返回解密后的字符串
+    return decrypted_bytes.decode('utf-8')
+
 # 创建接收数据的Flask应用
 app_receive = Flask(__name__)
 
@@ -68,23 +87,18 @@ app_receive = Flask(__name__)
 def receive_data():
     try:
         data = request.json
+        data = decrypt(data["data"], SECRET)
+        # 检查解密后的数据是否符合JSON格式
+        try:
+            data = json.loads(data)
+        except json.JSONDecodeError:
+            return '错误：解密后的数据不是有效的JSON格式', 400
+
         if not isinstance(data, dict):
             return '错误：无效的数据格式', 400
 
-        # 检查secret字段
-        if 'secret' not in data or data['secret'] != SECRET:
-            return '错误：无效的密钥', 403
-
-        # 检查data字段是否存在
-        if 'data' not in data:
-            return '错误：缺少data字段', 400
-
-        # 检查data字段是否符合正则表达式
-        if not regex.search(json.dumps(data['data'])):
-            return '错误：无效的数据格式', 400
-
         # 保存数据到文件
-        success, message = save_ban_data(data['data'])
+        success, message = save_ban_data(data)
         if success:
             return '数据接收并保存成功', 200
         else:
