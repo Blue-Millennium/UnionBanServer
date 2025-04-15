@@ -1,12 +1,13 @@
+import base64
 import json
 import os
 import re
 from configparser import ConfigParser
 from threading import Thread
-from flask import Flask, request, jsonify
+
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
-import base64
+from flask import Flask, request, jsonify
 
 # 读取配置文件
 config = ConfigParser()
@@ -24,7 +25,9 @@ if not os.path.exists(DATA_FILE):
         json.dump({"data": [], "CountFinal": 0}, file, indent=2)
 
 # 正则表达式
-regex = re.compile(r'"playerUuid":"([0-9a-fA-F-]+)","reason":"([^"]+)","time":"([^"]+)","sourceServer":"([^"]+)","playerName":"([^"]+)"')
+regex = re.compile(
+    r'"playerUuid":"([0-9a-fA-F-]+)","reason":"([^"]+)","time":"([^"]+)","sourceServer":"([^"]+)","playerName":"([^"]+)"')
+
 
 # 读取ban-data.json文件中的数据
 def read_ban_data():
@@ -33,6 +36,7 @@ def read_ban_data():
             return json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         return {"data": [], "CountFinal": 0}
+
 
 # 将数据保存到ban-data.json文件
 def save_ban_data(data):
@@ -64,6 +68,7 @@ def save_ban_data(data):
     except Exception as e:
         raise RuntimeError(f'保存数据时出错: {str(e)}')
 
+
 def decrypt(encrypted_data, key):
     # 创建 AES 密钥
     secret_key = key.encode('utf-8')
@@ -80,8 +85,10 @@ def decrypt(encrypted_data, key):
     # 返回解密后的字符串
     return decrypted_bytes.decode('utf-8')
 
+
 # 创建接收数据的Flask应用
 app_receive = Flask(__name__)
+
 
 @app_receive.route('/', methods=['POST'])
 def receive_data():
@@ -106,8 +113,10 @@ def receive_data():
     except Exception as e:
         return f'错误：{str(e)}', 500
 
+
 # 创建发送数据的Flask应用
 app_send = Flask(__name__)
+
 
 @app_send.route('/', methods=['GET'])
 def send_data():
@@ -117,10 +126,12 @@ def send_data():
     except Exception as e:
         return f'错误：{str(e)}', 500
 
+
 if __name__ == '__main__':
     # 启动两个服务器实例
     def run_server(app, port):
         app.run(host='0.0.0.0', port=port)
+
 
     thread_send = Thread(target=run_server, args=(app_send, PORT_SEND))
     thread_receive = Thread(target=run_server, args=(app_receive, PORT_RECEIVE))
