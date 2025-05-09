@@ -45,15 +45,15 @@ def save_ban_data(data):
 
         # 检查 sourceServer 是否为 Pardon，如果是则删除对应 uuid 的数据
         existing_data = ban_data["data"]
-        existing_uuids = {item['uuid']: item for item in existing_data}
+        existing_uuids = {item['playerUuid']: item for item in existing_data}
 
-        if data['uuid'] in existing_uuids and existing_uuids[data['uuid']]['sourceServer'] == 'Pardon':
-            existing_data.remove(existing_uuids[data['uuid']])
+        if data['playerUuid'] in existing_uuids and existing_uuids[data['playerUuid']]['sourceServer'] == 'Pardon':
+            existing_data.remove(existing_uuids[data['playerUuid']])
             # 使用新数据覆盖
             existing_data.append(data)
         else:
             # 检查数据是否已存在
-            if data['uuid'] in existing_uuids:
+            if data['playerUuid'] in existing_uuids:
                 return False, '错误：数据已存在'
 
             # 为新数据分配一个唯一的序号
@@ -79,8 +79,8 @@ def decrypt(encrypted_data, key):
     # 初始化 Cipher 实例
     cipher = AES.new(secret_key, AES.MODE_ECB)
 
-    # 解密数据
-    decrypted_bytes = unpad(cipher.decrypt(encrypted_bytes), AES.block_size)
+    # 解密数据，使用 PKCS7 填充方式
+    decrypted_bytes = unpad(cipher.decrypt(encrypted_bytes), AES.block_size, style='pkcs7')
 
     # 返回解密后的字符串
     return decrypted_bytes.decode('utf-8')
