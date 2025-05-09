@@ -26,7 +26,7 @@ if not os.path.exists(DATA_FILE):
 
 # 正则表达式
 regex = re.compile(
-    r'"playerUuid":"([0-9a-fA-F-]+)","reason":"([^"]+)","time":"([^"]+)","sourceServer":"([^"]+)","playerName":"([^"]+)"')
+    r'"playerName":"([^"]+)","playerUuid":"([0-9a-fA-F-]+)","time":(\d+),"reason":"([^"]+)","sourceServer":"([^"]+)"}')
 
 
 # 读取ban-data.json文件中的数据
@@ -54,7 +54,12 @@ def save_ban_data(data):
         else:
             # 检查数据是否已存在
             if data['playerUuid'] in existing_uuids:
-                return False, '错误：数据已存在'
+                if data["time"] < existing_uuids[data['playerUuid']]['time']:
+                    return False, '错误：数据已存在且过时'
+                elif data["time"] > existing_uuids[data['playerUuid']]['time']:
+                    existing_data.remove(existing_uuids[data['playerUuid']])
+                else:
+                    return True, '数据已同步成功'
 
             # 为新数据分配一个唯一的序号
             new_id = ban_data["CountFinal"] + 1
@@ -122,10 +127,14 @@ app_send = Flask(__name__)
 def send_data():
     try:
         ban_data = read_ban_data()
-        return jsonify(ban_data["data"])
+        # 去除每个数据项中的 'id' 字段
+        data_without_id = [
+            {key: value for key, value in item.items() if key != 'id'}  # 使用字典推导式移除 'id'
+            for item in ban_data["data"]
+        ]
+        return jsonify(data_without_id)
     except Exception as e:
         return f'错误：{str(e)}', 500
-
 
 if __name__ == '__main__':
     # 启动两个服务器实例
