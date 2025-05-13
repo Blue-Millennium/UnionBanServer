@@ -64,25 +64,19 @@ def save_ban_data(data):
         existing_data = ban_data["data"]
         existing_uuids = {item['playerUuid']: item for item in existing_data}
 
-        if data['playerUuid'] in existing_uuids and existing_uuids[data['playerUuid']]['sourceServer'] == 'Pardon':
-            existing_data.remove(existing_uuids[data['playerUuid']])
-            # 使用新数据覆盖
-            existing_data.append(data)
-        else:
-            # 检查数据是否已存在
-            if data['playerUuid'] in existing_uuids:
-                if data["time"] < existing_uuids[data['playerUuid']]['time']:
-                    return False, '错误：数据已存在且过时'
-                elif data["time"] > existing_uuids[data['playerUuid']]['time']:
-                    existing_data.remove(existing_uuids[data['playerUuid']])
-                else:
-                    return True, '数据已同步成功'
+        # 检查数据是否已存在
+        if data['playerUuid'] in existing_uuids:
+            if data["time"] < existing_uuids[data['playerUuid']]['time']:
+                return False, '错误：数据已存在且过时'
+            elif data["time"] > existing_uuids[data['playerUuid']]['time']:
+                existing_data.remove(existing_uuids[data['playerUuid']])
+            else:
+                return True, '数据已是最新版本，无需更新'
 
             # 为新数据分配一个唯一的序号
-            new_id = ban_data["CountFinal"] + 1
-            data_with_id = {**data, 'id': new_id}
+            ban_data["CountFinal"] = ban_data["CountFinal"] + 1
+            data_with_id = {**data, 'id': ban_data["CountFinal"]}
             existing_data.append(data_with_id)
-            ban_data["CountFinal"] = new_id
 
         with open(DATA_FILE, 'w') as file:
             json.dump(ban_data, file, indent=2)
