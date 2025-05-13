@@ -17,7 +17,24 @@ config.read('config.ini')
 PORT_SEND = int(config.get('server', 'port_send'))
 PORT_RECEIVE = int(config.get('server', 'port_receive'))
 DATA_FILE = config.get('server', 'data_file')
-SECRET = config.get('server', 'secret')
+
+def read_secrets(file_path):
+    secrets = []
+    try:
+        with open(file_path, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if line:
+                    # 分割备注和密钥
+                    parts = line.split(':')
+                    if len(parts) == 2:
+                        secrets.append(parts[1])  # 只取密钥部分
+    except FileNotFoundError:
+        raise RuntimeError(f'密钥文件 {file_path} 未找到')
+    return secrets
+
+# 获取密钥列表
+SECRETS = read_secrets('Secrets.txt')
 
 # 确保数据文件存在
 if not os.path.exists(DATA_FILE):
@@ -73,8 +90,16 @@ def save_ban_data(data):
     except Exception as e:
         raise RuntimeError(f'保存数据时出错: {str(e)}')
 
+def decrypt(encrypted_data):
+    for key in SECRETS:
+        try:
+            data = json.loads(decrypt1(encrypted_data, key))
+            return data
+        except Exception:
+            continue
+    return None
 
-def decrypt(encrypted_data, key):
+def decrypt1(encrypted_data, key):
     # 创建 AES 密钥
     secret_key = key.encode('utf-8')
 
@@ -99,13 +124,10 @@ app_receive = Flask(__name__)
 def receive_data():
     try:
         data = request.json
-        data = decrypt(data["data"], SECRET)
+        data = decrypt(data["data"])
+        if data is None:
+            return '错误：使用所有已登记的密钥均解密失败', 400
         # 检查解密后的数据是否符合JSON格式
-        try:
-            data = json.loads(data)
-        except json.JSONDecodeError:
-            return '错误：解密后的数据不是有效的JSON格式', 400
-
         if not isinstance(data, dict):
             return '错误：无效的数据格式', 400
 
